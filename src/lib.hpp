@@ -1,3 +1,5 @@
+#ifndef _LIB_H_
+#define _LIB_H_
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -89,3 +91,4 @@ struct process_map {
         }
     }
 };
+#endif

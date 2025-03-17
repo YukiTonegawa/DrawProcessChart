@@ -2,7 +2,6 @@ import sys
 import networkx as nx
 import matplotlib.pyplot as plt
 
-
 # csvファイルを読み込んで辺集合を返す
 def read_csv(path_in):
     with open(path_in) as f:
