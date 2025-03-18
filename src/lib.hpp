@@ -7,6 +7,8 @@
 #include <vector>
 #include <tuple>
 #include <map>
+#include <algorithm>
+#include <cmath>
 
 // 文字列sをdelimでsを分割
 std::vector<std::string> split(const std::string &s, char delim) {
@@ -91,4 +93,21 @@ struct process_map {
         }
     }
 };
+
+// 辺の長さの総和を返す
+double sum_edge_length(std::vector<std::pair<int, int>> P, std::vector<std::pair<int, int>> E) {
+    // 多重辺を省く
+    std::sort(E.begin(), E.end());
+    E.erase(std::unique(E.begin(), E.end()), E.end());
+
+    double ans = 0;
+    for (auto [s, t] : E) {
+        auto [sx, sy] = P[s];
+        auto [tx, ty] = P[t];
+        int dx = tx - sx;
+        int dy = ty - sy;
+        ans += std::sqrt(dx * dx + dy * dy);
+    }
+    return ans;
+}
 #endif

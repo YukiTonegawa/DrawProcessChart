@@ -1,11 +1,10 @@
 #include "lib.hpp"
 #include <queue>
 
-// 評価関数
 int main() {
     std::vector<std::pair<int, int>> E;
     process_map mp;
-    for (auto [s, t] : read_csv("../testcase/random_small_dense.csv")) {
+    for (auto [s, t] : read_csv("../testcase/case2.csv")) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
@@ -45,10 +44,20 @@ int main() {
         Y[i] = xcnt[x]++;
     }
 
+    // スコア計算
+    {
+        std::vector<std::pair<int, int>> pos(N);
+        for (int i = 0; i < N; i++) {
+            pos[i] = {X[i], Y[i]};
+        }
+        double score = sum_edge_length(pos, E);
+        std::cout << "score is " << score << '\n';
+    }
+
     // 答えを作成
     std::vector<std::tuple<std::string, int, int>> P(N);
     for (int i = 0; i < N; i++) {
         P[i] = {mp.get_process(i), X[i], Y[i]};
     }
-    write_csv("../testcase/random_small_dense_ans.csv", P);
+    write_csv("../testcase/case2_ans.csv", P);
 }
