@@ -1,4 +1,5 @@
 #include "lib.hpp"
+#include "random.hpp"
 #include <queue>
 #include <chrono>
 #include <cassert>
@@ -69,12 +70,69 @@ double temperature_scheduler_exp<id>::T1(0);
 template<int id>
 double temperature_scheduler_exp<id>::Tend(0);
 
+// FreqTempUpdate := この回数ごとに1回時刻と温度を更新
+template<typename Timer, typename Temp, typename State, bool use_rollback = true>
+struct simulated_annealing {
+    using UpdateType = typename State::UpdateType;
+    using ScoreType = typename State::ScoreType;
+    void operator ()(State &v, double _Temp0, double _Temp1, int _TimeEnd, int _FreqTempUpdate) {
+        int TimeEnd = _TimeEnd; // 終了時刻
+        int TimeCur; // 現在時刻
+        double TempCur; // 現在の温度
+        Timer::set();
+        Temp::set(_Temp0, _Temp1, _TimeEnd);
+        ScoreType score_cur = v.get_score();
+        Timer::set();
+        int i = _FreqTempUpdate;
+        while (true) {
+            if (i == _FreqTempUpdate) {
+                TimeCur = Timer::elapse();
+                if (TimeCur >= TimeEnd) return;
+                TempCur = Temp::get(TimeCur);
+                i = 0;
+            }
+            i++;
+            v.random_update();
+            ScoreType score_next = v.get_score();
+            double prob = Temp::p_move(score_cur, score_next, TempCur);
+            if (!rng.judge(prob)) v.rollback();
+            else score_cur = score_next;
+        }
+    }
+};
+
+
 // 各工程の位置
 struct node {
     int x, y;
 };
 
+/*
+更新の種類
+1工程の横方向を1増加/減少可能ならそうする
+1工程の縦方向
+*/
+struct StateSA {
+    using UpdateType = std::tuple<int, int, int>;
+    using ScoreType = int;
+    ScoreType score;
+    //std::vector<std::vector<int>> 
 
+    StateSA() {}
+    void random_update() {
+        //
+    }
+    void rollback() {
+        //
+    }
+    std::pair<UpdateType, ScoreType> get_next() {
+        return {UpdateType{}, score};
+    }
+   
+    ScoreType get_score() {
+        return score;
+    }
+};
 
 int main() {
     std::vector<std::pair<int, int>> E;
@@ -84,9 +142,6 @@ int main() {
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
     }
-
-
-
 
 
     // 各工程の横軸の座標を決定

@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <cmath>
 
-// 文字列sをdelimでsを分割
+// 文字列sをdelimで分割
 std::vector<std::string> split(const std::string &s, char delim) {
     std::vector<std::string> elems;
     std::stringstream ss(s);

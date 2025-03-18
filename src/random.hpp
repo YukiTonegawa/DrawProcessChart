@@ -23,5 +23,11 @@ struct random_generator {
         std::shuffle(res.begin(), res.end(), mt);
         return res;
     }
+
+    // 確率pで1, (1-p)で0
+    bool judge(double p) {
+        static constexpr double inf = (double)std::numeric_limits<uint32_t>::max();
+        return random_number() < inf * p;
+    }
 } rng;
 #endif
