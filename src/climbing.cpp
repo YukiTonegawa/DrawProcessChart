@@ -36,7 +36,7 @@ long long timer<id>::T0(0);
 int main() {
     std::vector<std::pair<int, int>> E;
     process_map mp;
-    for (auto [s, t] : read_csv("../testcase/random_med.csv")) {
+    for (auto [s, t] : read_csv("../testcase/case2.csv")) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
@@ -74,7 +74,8 @@ int main() {
     std::vector<std::vector<int>> Col(N);
     for (int i = 0; i < N; i++) {
         int x = X[i];
-        Y[i] = xcnt[x]++;
+        Y[i] = (xcnt[x] % 2 == 1 ? (xcnt[x] + 1) / 2 : -xcnt[x] / 2);
+        xcnt[x]++;
         Col[x].push_back(i);
     }
 
@@ -113,5 +114,5 @@ int main() {
     for (int i = 0; i < N; i++) {
         P[i] = {mp.get_process(i), X[i], Y[i]};
     }
-    write_csv("../testcase/random_med_ans_climbing.csv", P);
+    write_csv("../testcase/case2_ans_climbing.csv", P);
 }
