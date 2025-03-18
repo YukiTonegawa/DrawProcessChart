@@ -41,7 +41,8 @@ int main() {
     std::vector<int> Y(N), xcnt(N, 0);
     for (int i = 0; i < N; i++) {
         int x = X[i];
-        Y[i] = xcnt[x]++;
+        Y[i] = (xcnt[x] % 2 == 1 ? (xcnt[x] + 1) / 2 : -xcnt[x] / 2);
+        xcnt[x]++;
     }
 
     // スコア計算
