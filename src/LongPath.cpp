@@ -58,8 +58,8 @@ struct StateSA {
 
     void random_update() {
         int M = P.size();
-        int a = rng.RandomNumber() % M;
-        int b = rng.RandomNumber() % M;
+        int a = rng.random_number() % M;
+        int b = rng.random_number() % M;
         std::swap(perm[a], perm[b]);
         last_swapped = {a, b};
         last_score = score;
@@ -83,8 +83,8 @@ int main() {
     std::string path_out = "../testcase/case1_ans.csv";
 
     std::vector<std::pair<int, int>> E;
-    process_map mp;
-    for (auto [s, t] : CheckLib::ReadCsv(path_in)) {
+    ProcessMap mp;
+    for (auto [s, t] : CheckLib::read_csv(path_in)) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
@@ -117,7 +117,7 @@ int main() {
         for (int i = 0; i < N; i++) {
             ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
         }
-        CheckLib::WriteCsv(path_out, ans);
+        CheckLib::write_csv(path_out, ans);
     } else {
         StateSA sa(N, P, X, E);
         simulated_annealing<timer<0>, temperature_scheduler_exp<0>, StateSA>()(sa, 1000, 0.1, 2000, 1);
@@ -128,6 +128,6 @@ int main() {
         for (int i = 0; i < N; i++) {
             ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
         }
-        CheckLib::WriteCsv(path_out, ans);
+        CheckLib::write_csv(path_out, ans);
     }
 }

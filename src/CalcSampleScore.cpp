@@ -2,7 +2,7 @@
 #include "Lib.hpp"
 
 // 文字列sをdelimで分割
-std::vector<std::string> Split(const std::string &s, char delim) {
+std::vector<std::string> split(const std::string &s, char delim) {
     std::vector<std::string> elems;
     std::stringstream ss(s);
     std::string item;
@@ -20,7 +20,7 @@ int main() {
     std::string path_out = "../testcase/case2_ans.csv";
 
     std::vector<std::pair<int, int>> E;
-    process_map mp;
+    ProcessMap mp;
     for (auto [s, t] : CheckLib::ReadCsv(path_in)) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
@@ -34,7 +34,7 @@ int main() {
     std::string s;
     while (std::getline(ifs, s)) {
         if (!s.empty()) {
-            auto e = Split(s, ',');
+            auto e = split(s, ',');
             int id = mp.get_id(e[0]);
             pos[id].first = std::stoi(e[1]);
             pos[id].second = std::stoi(e[2]);

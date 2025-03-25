@@ -14,7 +14,7 @@
 // 指定したパスが正しい入力(工程の前後関係のCSVファイル)か判定する関数群
 namespace CheckLib {
     // 拡張子がcsvか
-    bool IsCsv(const std::string &path) {
+    bool is_csv(const std::string &path) {
         // 最後にドットが現れて以降の文字列がcsvか
         int len = path.size(), last_dot = -1;
         for (int i = 0; i < len; i++) {
@@ -28,12 +28,12 @@ namespace CheckLib {
     }
 
     // pathファイルが存在するか
-    bool IsExist(const std::string &path) {
+    bool is_exist(const std::string &path) {
         return std::filesystem::is_regular_file(path);
     }
 
     // pathファイルが0行以上の(辺の始点),(辺の終点)の形式を満たすか
-    bool IsValidFormat(const std::string &path) {
+    bool is_valid_format(const std::string &path) {
         std::ifstream ifs(path, std::ios::in);
         std::string s;
         while (std::getline(ifs, s)) {
@@ -50,9 +50,9 @@ namespace CheckLib {
         return true;
     }
 
-    // IsValidFormatを満たすとして
+    // is_valid_formatを満たすとして
     // pathを読み込んで辺集合を返す
-    std::vector<std::pair<std::string, std::string>> ReadCsv(const std::string &path) {
+    std::vector<std::pair<std::string, std::string>> read_csv(const std::string &path) {
         std::ifstream ifs(path, std::ios::in);
         std::string s;
         std::vector<std::pair<std::string, std::string>> E;
@@ -72,7 +72,7 @@ namespace CheckLib {
     }
 
     // path_outに出力
-    void WriteCsv(const std::string &path, const std::vector<std::tuple<std::string, int, int>> &P) {
+    void write_csv(const std::string &path, const std::vector<std::tuple<std::string, int, int>> &P) {
         std::ofstream ofs(path);
         for (auto [name, x, y] : P) {
             ofs << name << ',' << x << ',' << y << std::endl;
@@ -82,7 +82,7 @@ namespace CheckLib {
 
     // DAG(閉路の無いグラフ)か
     // トポロジカルソートを実行できることとDAGなことが同値であるため、トポロジカルソートを行って判定
-    bool IsDAG(const std::vector<std::vector<int>> &G) {
+    bool is_DAG(const std::vector<std::vector<int>> &G) {
         int N = G.size();
         std::vector<int> in(N, 0);
         for (int s = 0; s < N; s++) {
@@ -112,10 +112,10 @@ namespace CheckLib {
         return cnt == N;
     }
 
-    // IsValidFormatを満たすとして
+    // is_valid_formatを満たすとして
     // pathがDAGか判定
-    bool IsDAG(const std::string &path) {
-        auto E = ReadCsv(path);
+    bool is_DAG(const std::string &path) {
+        auto E = read_csv(path);
         std::map<std::string, int> mp;
         std::vector<std::vector<int>> G;
         for (auto [a, b] : E) {
@@ -139,11 +139,11 @@ namespace CheckLib {
             }
             G[A].push_back(B);
         }
-        return IsDAG(G);
+        return is_DAG(G);
     }
 
     // 多重辺を省く
-    std::vector<std::pair<int, int>> RemoveMultipleEdge(std::vector<std::pair<int, int>> E) {
+    std::vector<std::pair<int, int>> remove_multiple_edge(std::vector<std::pair<int, int>> E) {
         std::sort(E.begin(), E.end());
         E.erase(std::unique(E.begin(), E.end()), E.end());
         return E;
@@ -154,8 +154,8 @@ namespace CheckLib {
     // 2.pathはcsvファイル
     // 3.pathは0行以上の(辺の始点),(辺の終点)で構成される
     // 4.閉路が存在しない
-    bool IsValidInput(const std::string &path) {
-        return IsExist(path) && IsCsv(path) && IsValidFormat(path) && IsDAG(path);
+    bool is_valid_input(const std::string &path) {
+        return is_exist(path) && is_csv(path) && is_valid_format(path) && is_DAG(path);
     }
 };
 

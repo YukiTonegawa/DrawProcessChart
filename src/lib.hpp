@@ -12,7 +12,7 @@
 #include <queue>
 
 // 工程名と番号を1対1対応させるmap
-struct process_map {
+struct ProcessMap {
   private:
     std::map<std::string, int> _mp;
     std::vector<std::string> _S;
@@ -55,6 +55,9 @@ struct process_map {
         }
     }
 };
+
+
+
 
 std::vector<int> calc_min_x(int N, std::vector<std::pair<int, int>> E) {
     std::vector<std::vector<int>> G(N);

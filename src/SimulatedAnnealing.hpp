@@ -94,7 +94,7 @@ struct simulated_annealing {
             v.random_update();
             ScoreType score_next = v.get_score();
             double prob = Temp::p_move(score_cur, score_next, TempCur);
-            if (!rng.Judge(prob)) v.rollback();
+            if (!rng.judge(prob)) v.rollback();
             else score_cur = score_next;
         }
     }

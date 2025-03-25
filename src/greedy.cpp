@@ -8,15 +8,15 @@ int main() {
     std::string path_out = "../testcase/case1_ans.csv";
 
     std::vector<std::pair<int, int>> E;
-    process_map mp;
-    for (auto [s, t] : CheckLib::ReadCsv(path_in)) {
+    ProcessMap mp;
+    for (auto [s, t] : CheckLib::read_csv(path_in)) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
     }
 
     // 各工程の横軸の座標を決定
-    const int N = mp.size();
+    int N = mp.size();
     std::vector<int> in(N, 0), X(N);
     std::vector<std::vector<int>> G(N);
     for (auto [s, t] : E) {
@@ -66,5 +66,5 @@ int main() {
     for (int i = 0; i < N; i++) {
         P[i] = {mp.get_process(i), pos[i].first, pos[i].second};
     }
-    CheckLib::WriteCsv(path_out, P);
+    CheckLib::write_csv(path_out, P);
 }

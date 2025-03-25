@@ -12,12 +12,12 @@ struct RandomGenerator {
     RandomGenerator(const int seed = 1234) : mt(seed) {}
 
     // [0, 2^32)
-    uint32_t RandomNumber() {
+    uint32_t random_number() {
         return mt();
     }
 
     // [0, N)の順列
-    std::vector<int> RandomPermutation(int N) {
+    std::vector<int> random_permutation(int N) {
         std::vector<int> res(N);
         std::iota(res.begin(), res.end(), 0);
         std::shuffle(res.begin(), res.end(), mt);
@@ -25,9 +25,9 @@ struct RandomGenerator {
     }
 
     // 確率pで1, (1-p)で0
-    bool Judge(double p) {
+    bool judge(double p) {
         static constexpr double inf = (double)std::numeric_limits<uint32_t>::max();
-        return RandomNumber() < inf * p;
+        return random_number() < inf * p;
     }
 } rng;
 #endif
