@@ -1,43 +1,21 @@
-#include "lib.hpp"
-#include "random.hpp"
+#include "CheckLib.hpp"
+#include "Lib.hpp"
+#include "Random.hpp"
+#include "SimulatedAnnealing.hpp"
 #include "solve_penetration.hpp"
 #include <queue>
 #include <chrono>
 #include <cassert>
 
-// ms単位で現在の時刻を取得
-long long timems() {
-    auto p = std::chrono::system_clock::now().time_since_epoch();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(p).count();
-}
-
-template<int id>
-struct timer {
-    static bool ok; // set済みか
-    static long long T0;
-    // 基準点をセット
-    static void set() {
-        ok = true;
-        T0 = timems();
-    }
-    // 基準点からの経過時間(ms単位)
-    static long long elapse() {
-        assert(ok);
-        return timems() - T0;
-    };
-};
-template<int id>
-bool timer<id>::ok(false);
-template<int id>
-long long timer<id>::T0(0);
-
-
 // 山登り法
 // 時間の許す限り縦方向の並びを変更
 int main() {
+    std::string path_in = "../testcase/case1.csv";
+    std::string path_out = "../testcase/case1_ans.csv";
+
     std::vector<std::pair<int, int>> E;
     process_map mp;
-    for (auto [s, t] : read_csv("../testcase/case1.csv")) {
+    for (auto [s, t] : CheckLib::ReadCsv(path_in)) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
@@ -96,11 +74,11 @@ int main() {
     timer<0>::set();
     while (true) {
         if (timer<0>::elapse() >= Tend) break;
-        int x = rng.random_number() % N;
+        int x = rng.RandomNumber() % N;
         int sz = Col[x].size();
         if (sz <= 1) continue;
-        int a = Col[x][rng.random_number() % sz];
-        int b = Col[x][rng.random_number() % sz];
+        int a = Col[x][rng.RandomNumber() % sz];
+        int b = Col[x][rng.RandomNumber() % sz];
         std::swap(Y[a], Y[b]);
         double new_score = calc_score();
         if (new_score < score) {
@@ -123,5 +101,5 @@ int main() {
     for (int i = 0; i < N; i++) {
         P[i] = {mp.get_process(i), pos[i].first, pos[i].second};
     }
-    write_csv("../testcase/case1_ans_climbing.csv", P);
+    CheckLib::WriteCsv(path_out, P);
 }

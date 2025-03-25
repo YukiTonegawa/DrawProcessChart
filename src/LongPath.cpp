@@ -1,107 +1,9 @@
-#include "lib.hpp"
+#include "CheckLib.hpp"
+#include "Lib.hpp"
+#include "SimulatedAnnealing.hpp"
 #include "solve_penetration.hpp"
-#include "random.hpp"
 #include <queue>
 #include <numeric>
-#include <chrono>
-#include <cassert>
-
-// ms単位で現在の時刻を取得
-long long timems() {
-    auto p = std::chrono::system_clock::now().time_since_epoch();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(p).count();
-}
-
-template<int id>
-struct timer {
-    static bool ok; // set済みか
-    static long long T0;
-    // 基準点をセット
-    static void set() {
-        ok = true;
-        T0 = timems();
-    }
-    // 基準点からの経過時間(ms単位)
-    static long long elapse() {
-        assert(ok);
-        return timems() - T0;
-    };
-};
-template<int id>
-bool timer<id>::ok(false);
-template<int id>
-long long timer<id>::T0(0);
-
-template<int id>
-struct temperature_scheduler_exp {
-    static bool ok;
-    static double T0, T1, Tend;
-    // 指数スケジューリング
-    // t := 時刻を[0, 1]に正規化したもの
-    // Tcur = T0 ^ (1 - t) * T1 ^ t
-    // Tend : 終了時刻(ms)
-    static void set(double T0_, double T1_, double Tend_) {
-        ok = true;
-        T0 = T0_;
-        T1 = T1_;
-        Tend = Tend_;
-    }
-    // 現在時刻 -> 現在の温度
-    static double get(double elapse_ms) {
-        assert(ok);
-        assert(0 <= elapse_ms && elapse_ms <= Tend);
-        elapse_ms /= Tend;
-        return std::pow(T0, 1 - elapse_ms) * std::pow(T1, elapse_ms);
-    }
-    // (変更前のスコア, 変更後のスコア, 現在の温度) -> 遷移確率
-    // diff_scoreが0以下     1 
-    //    0より大きい             e ^ {diff_score / Tcur}
-    template<typename T>
-    static double p_move(T score_before, T score_after, double Tcur) {
-        T diff_score = score_after - score_before;
-        return diff_score <= 0 ? 1 : std::exp((double)-diff_score / Tcur);
-    }
-};
-template<int id>
-bool temperature_scheduler_exp<id>::ok(false);
-template<int id>
-double temperature_scheduler_exp<id>::T0(0);
-template<int id>
-double temperature_scheduler_exp<id>::T1(0);
-template<int id>
-double temperature_scheduler_exp<id>::Tend(0);
-
-// FreqTempUpdate := この回数ごとに1回時刻と温度を更新
-template<typename Timer, typename Temp, typename State, bool use_rollback = true>
-struct simulated_annealing {
-    using UpdateType = typename State::UpdateType;
-    using ScoreType = typename State::ScoreType;
-    void operator ()(State &v, double _Temp0, double _Temp1, int _TimeEnd, int _FreqTempUpdate) {
-        int TimeEnd = _TimeEnd; // 終了時刻
-        int TimeCur; // 現在時刻
-        double TempCur; // 現在の温度
-        Timer::set();
-        Temp::set(_Temp0, _Temp1, _TimeEnd);
-        ScoreType score_cur = v.get_score();
-        Timer::set();
-        int i = _FreqTempUpdate;
-        while (true) {
-            if (i == _FreqTempUpdate) {
-                TimeCur = Timer::elapse();
-                if (TimeCur >= TimeEnd) return;
-                TempCur = Temp::get(TimeCur);
-                i = 0;
-            }
-            i++;
-            v.random_update();
-            ScoreType score_next = v.get_score();
-            double prob = Temp::p_move(score_cur, score_next, TempCur);
-            if (!rng.judge(prob)) v.rollback();
-            else score_cur = score_next;
-        }
-    }
-};
-
 
 std::vector<std::pair<int, int>> compress_y(int N, std::vector<std::vector<int>> P, std::vector<int> perm, std::vector<int> X) {
     int R = P.size();
@@ -156,8 +58,8 @@ struct StateSA {
 
     void random_update() {
         int M = P.size();
-        int a = rng.random_number() % M;
-        int b = rng.random_number() % M;
+        int a = rng.RandomNumber() % M;
+        int b = rng.RandomNumber() % M;
         std::swap(perm[a], perm[b]);
         last_swapped = {a, b};
         last_score = score;
@@ -177,9 +79,12 @@ struct StateSA {
 };
 
 int main() {
+    std::string path_in = "../testcase/case1.csv";
+    std::string path_out = "../testcase/case1_ans.csv";
+
     std::vector<std::pair<int, int>> E;
     process_map mp;
-    for (auto [s, t] : read_csv("../testcase/random_small.csv")) {
+    for (auto [s, t] : CheckLib::ReadCsv(path_in)) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
@@ -212,7 +117,7 @@ int main() {
         for (int i = 0; i < N; i++) {
             ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
         }
-        write_csv("../testcase/random_small_ans_lp.csv", ans);
+        CheckLib::WriteCsv(path_out, ans);
     } else {
         StateSA sa(N, P, X, E);
         simulated_annealing<timer<0>, temperature_scheduler_exp<0>, StateSA>()(sa, 1000, 0.1, 2000, 1);
@@ -223,6 +128,6 @@ int main() {
         for (int i = 0; i < N; i++) {
             ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
         }
-        write_csv("../testcase/random_small_ans_lp.csv", ans);
+        CheckLib::WriteCsv(path_out, ans);
     }
 }

@@ -1,11 +1,15 @@
-#include "lib.hpp"
+#include "CheckLib.hpp"
+#include "Lib.hpp"
 #include "solve_penetration.hpp"
 #include <queue>
 
 int main() {
+    std::string path_in = "../testcase/case1.csv";
+    std::string path_out = "../testcase/case1_ans.csv";
+
     std::vector<std::pair<int, int>> E;
     process_map mp;
-    for (auto [s, t] : read_csv("../testcase/case1.csv")) {
+    for (auto [s, t] : CheckLib::ReadCsv(path_in)) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
@@ -62,5 +66,5 @@ int main() {
     for (int i = 0; i < N; i++) {
         P[i] = {mp.get_process(i), pos[i].first, pos[i].second};
     }
-    write_csv("../testcase/case1_ans_greedy.csv", P);
+    CheckLib::WriteCsv(path_out, P);
 }

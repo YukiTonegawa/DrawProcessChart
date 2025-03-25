@@ -1,4 +1,4 @@
-#include "lib.hpp"
+#include "Lib.hpp"
 
 // 貫通を解消
 std::vector<std::pair<int, int>> solve_penetration(std::vector<std::pair<int, int>> P, std::vector<std::pair<int, int>> E) {
