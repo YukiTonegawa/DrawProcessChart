@@ -4,20 +4,20 @@
 #include <vector>
 #include <algorithm>
 
-struct random_generator {
+struct RandomGenerator {
   private:
     std::mt19937 mt;
   
   public:
-    random_generator(const int seed = 1234) : mt(seed) {}
+    RandomGenerator(const int seed = 1234) : mt(seed) {}
 
     // [0, 2^32)
-    uint32_t random_number() {
+    uint32_t RandomNumber() {
         return mt();
     }
 
     // [0, N)の順列
-    std::vector<int> random_permutation(int N) {
+    std::vector<int> RandomPermutation(int N) {
         std::vector<int> res(N);
         std::iota(res.begin(), res.end(), 0);
         std::shuffle(res.begin(), res.end(), mt);
@@ -25,9 +25,9 @@ struct random_generator {
     }
 
     // 確率pで1, (1-p)で0
-    bool judge(double p) {
+    bool Judge(double p) {
         static constexpr double inf = (double)std::numeric_limits<uint32_t>::max();
-        return random_number() < inf * p;
+        return RandomNumber() < inf * p;
     }
 } rng;
 #endif

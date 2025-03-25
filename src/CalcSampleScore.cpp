@@ -1,21 +1,24 @@
-#include "lib.hpp"
-#include <queue>
+#include "CheckLib.hpp"
+#include "Lib.hpp"
 
 // サンプルのスコア計算用
 int main() {
-    // 前後関係を読み込む
+    std::string path_in = "../testcase/case2.csv";
+    std::string path_out = "../testcase/case2_ans.csv";
+
     std::vector<std::pair<int, int>> E;
     process_map mp;
-    for (auto [s, t] : read_csv("../testcase/case2.csv")) {
+    for (auto [s, t] : CheckLib::ReadCsv(path_in)) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
     }
+    /*
     const int N = mp.size();
     std::vector<int> X(N), Y(N);
 
     // 位置を読み込む
-    std::ifstream ifs("../testcase/case2_ans_sample.csv", std::ios::in);
+    std::ifstream ifs(path_out, std::ios::in);
     std::string s;
     while (std::getline(ifs, s)) {
         if (!s.empty() && s.back() == '\r') { // todo: osに依存しない改行文字
@@ -23,7 +26,6 @@ int main() {
         }
         if (!s.empty()) {
             auto e = split(s, ',');
-
             int id = mp.get_id(e[0]);
             X[id] = std::stoi(e[1]);
             Y[id] = std::stoi(e[2]);
@@ -39,4 +41,5 @@ int main() {
         double score = sum_edge_length(pos, E);
         std::cout << "score is " << score << '\n';
     }
+    */
 }

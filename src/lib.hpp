@@ -9,7 +9,9 @@
 #include <map>
 #include <algorithm>
 #include <cmath>
+#include <queue>
 
+/*
 // 文字列sをdelimで分割
 std::vector<std::string> split(const std::string &s, char delim) {
     std::vector<std::string> elems;
@@ -22,32 +24,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
     }
     return elems;
 }
-
-// 入力ファイルpath_inを読み込んで辺集合を返す
-std::vector<std::pair<std::string, std::string>> read_csv(std::string path_in) {
-    std::ifstream ifs(path_in, std::ios::in);
-    std::string s;
-    std::vector<std::pair<std::string, std::string>> E;
-    while (std::getline(ifs, s)) {
-        if (!s.empty() && s.back() == '\r') { // todo: osに依存しない改行文字
-            s.pop_back();
-        }
-        if (!s.empty()) {
-            auto e = split(s, ',');
-            E.push_back({e[0], e[1]});
-        }
-    }
-    return E;
-}
-
-// path_outに出力
-void write_csv(std::string path_out, std::vector<std::tuple<std::string, int, int>> P) {
-    std::ofstream ofs(path_out);
-    for (auto [name, x, y] : P) {
-        ofs << name << ',' << x << ',' << y << std::endl;
-    }
-    ofs.close();
-}
+*/
 
 // 工程名と番号を1対1対応させるmap
 struct process_map {
@@ -93,6 +70,78 @@ struct process_map {
         }
     }
 };
+
+std::vector<int> calc_min_x(int N, std::vector<std::pair<int, int>> E) {
+    std::vector<std::vector<int>> G(N);
+    for (auto [s, t] : E) {
+        G[s].push_back(t);
+    }
+    std::vector<int> in(N, 0), X(N);
+    for (auto [s, t] : E) {
+        in[t]++;
+    }
+    std::queue<int> que;
+    for (int i = 0; i < N; i++) {
+        if (in[i] == 0) {
+            X[i] = 0;
+            que.push(i);
+        }
+    }
+    while (!que.empty()) {
+        int s = que.front();
+        que.pop();
+        for (int t : G[s]) {
+            in[t]--;
+            if (in[t] == 0) {
+                X[t] = X[s] + 1;
+                que.push(t);
+            }
+        }
+    }
+    return X;
+}
+
+std::vector<std::vector<int>> decompose_long_path(int N, std::vector<std::pair<int, int>> E) {
+    std::vector<int> dep(N, -1), next(N, -1), used(N, 0);
+    std::vector<std::vector<int>> G(N), res;
+    for (auto [s, t] : E) {
+        G[s].push_back(t);
+    }
+    auto dfs = [&](auto &&dfs, int v) -> int {
+        if (used[v]) return -1;
+        if (dep[v] != -1) return dep[v];
+        dep[v] = 0;
+        for (int t : G[v]) {
+            int d = dfs(dfs, t) + 1;
+            if (dep[v] < d) {
+                dep[v] = d;
+                next[v] = t;
+            }
+        }
+        return dep[v];
+    };
+    while (true) {
+        std::pair<int, int> M = {-1, -1};
+        for (int i = 0; i < N; i++) {
+            dfs(dfs, i);
+            if (!used[i]) M = std::max(M, {dep[i], i});
+        }
+        if (M.first == -1) break;
+        int v = M.second;
+        res.push_back({});
+        while (v != -1) {
+            res.back().push_back(v);
+            used[v] = true;
+            v = next[v];
+        }
+        for (int i = 0; i < N; i++) {
+            if (!used[i]) {
+                dep[i] = next[i] = -1;
+            }
+        }
+    }
+    return res;
+}
 
 // 辺の長さの総和を返す
 double sum_edge_length(std::vector<std::pair<int, int>> P, std::vector<std::pair<int, int>> E) {

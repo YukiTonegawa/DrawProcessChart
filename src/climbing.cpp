@@ -1,5 +1,6 @@
 #include "lib.hpp"
 #include "random.hpp"
+#include "solve_penetration.hpp"
 #include <queue>
 #include <chrono>
 #include <cassert>
@@ -36,7 +37,7 @@ long long timer<id>::T0(0);
 int main() {
     std::vector<std::pair<int, int>> E;
     process_map mp;
-    for (auto [s, t] : read_csv("../testcase/random_med.csv")) {
+    for (auto [s, t] : read_csv("../testcase/case1.csv")) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
@@ -74,17 +75,19 @@ int main() {
     std::vector<std::vector<int>> Col(N);
     for (int i = 0; i < N; i++) {
         int x = X[i];
-        Y[i] = (xcnt[x] % 2 == 1 ? (xcnt[x] + 1) / 2 : -xcnt[x] / 2);
+        Y[i] = xcnt[x];
+        // Y[i] = (xcnt[x] % 2 == 1 ? (xcnt[x] + 1) / 2 : -xcnt[x] / 2);
         xcnt[x]++;
         Col[x].push_back(i);
     }
 
     auto calc_score = [&]() -> double {
-        std::vector<std::pair<int, int>> pos(N);
+        std::vector<std::pair<int, int>> tmp(N);
         for (int i = 0; i < N; i++) {
-            pos[i] = {X[i], Y[i]};
+            tmp[i] = {X[i], Y[i]};
         }
-        return sum_edge_length(pos, E);
+        tmp = solve_penetration(tmp, E);
+        return sum_edge_length(tmp, E);
     };
 
     double score = calc_score();
@@ -107,12 +110,18 @@ int main() {
         }
     }
 
+    std::vector<std::pair<int, int>> pos(N);
+    for (int i = 0; i < N; i++) {
+        pos[i] = {X[i], Y[i]};
+    }
+    pos = solve_penetration(pos, E);
+
     std::cout << "score is " << score << '\n';
 
     // 答えを作成
     std::vector<std::tuple<std::string, int, int>> P(N);
     for (int i = 0; i < N; i++) {
-        P[i] = {mp.get_process(i), X[i], Y[i]};
+        P[i] = {mp.get_process(i), pos[i].first, pos[i].second};
     }
-    write_csv("../testcase/random_med_ans_climbing.csv", P);
+    write_csv("../testcase/case1_ans_climbing.csv", P);
 }

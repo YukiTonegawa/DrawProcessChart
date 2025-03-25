@@ -1,6 +1,8 @@
 #include "lib.hpp"
+#include "solve_penetration.hpp"
 #include "random.hpp"
 #include <queue>
+#include <numeric>
 #include <chrono>
 #include <cassert>
 
@@ -30,7 +32,6 @@ bool timer<id>::ok(false);
 template<int id>
 long long timer<id>::T0(0);
 
-
 template<int id>
 struct temperature_scheduler_exp {
     static bool ok;
@@ -53,12 +54,12 @@ struct temperature_scheduler_exp {
         return std::pow(T0, 1 - elapse_ms) * std::pow(T1, elapse_ms);
     }
     // (変更前のスコア, 変更後のスコア, 現在の温度) -> 遷移確率
-    // diff_scoreが0以上     1 
-    //    0未満             e ^ {diff_score / Tcur}
+    // diff_scoreが0以下     1 
+    //    0より大きい             e ^ {diff_score / Tcur}
     template<typename T>
     static double p_move(T score_before, T score_after, double Tcur) {
         T diff_score = score_after - score_before;
-        return diff_score >= 0 ? 1 : std::exp((double)diff_score / Tcur);
+        return diff_score <= 0 ? 1 : std::exp((double)-diff_score / Tcur);
     }
 };
 template<int id>
@@ -102,33 +103,74 @@ struct simulated_annealing {
 };
 
 
-// 各工程の位置
-struct node {
-    int x, y;
-};
+std::vector<std::pair<int, int>> compress_y(int N, std::vector<std::vector<int>> P, std::vector<int> perm, std::vector<int> X) {
+    int R = P.size();
+    int l = 0, y = 0;
+    std::vector<std::pair<int, int>> ans(N);
+    while (l < R) {
+        std::vector<bool> used(N, false);
+        int r = l;
+        while (r < R) {
+            int lx = X[P[perm[r]][0]];
+            int rx = X[P[perm[r]].back()];
+            bool ok = true;
+            for (int j = lx; j <= rx; j++) {
+                if (used[j]) {
+                    ok = false;
+                    break;
+                }
+                used[j] = true;
+            }
+            if (!ok) break;
+            r++;
+        }
+        for (int i = l; i < r; i++) {
+            for (int v : P[perm[i]]) {
+                ans[v].first = X[v];
+                ans[v].second = y;
+            }
+        }
+        y++;
+        l = r;
+    }
+    return ans;
+}
 
-/*
-更新の種類
-1工程の横方向を1増加/減少可能ならそうする
-1工程の縦方向
-*/
 struct StateSA {
     using UpdateType = std::tuple<int, int, int>;
-    using ScoreType = int;
+    using ScoreType = double;
     ScoreType score;
-    //std::vector<std::vector<int>> 
+    std::vector<int> perm;
+    int N;
+    std::pair<int, int> last_swapped;
+    double last_score;
+    std::vector<std::vector<int>> P;
+    std::vector<int> X;
+    std::vector<std::pair<int, int>> E;
 
-    StateSA() {}
+    StateSA(int _N, std::vector<std::vector<int>> _P, std::vector<int> _X, std::vector<std::pair<int, int>> _E) : score(std::numeric_limits<double>::max()), perm(_P.size()), N(_N), P(_P), X(_X), E(_E) {
+        std::iota(perm.begin(), perm.end(), 0);
+        auto pos = compress_y(N, P, perm, X);
+        score = sum_edge_length(pos, E);
+    }
+
     void random_update() {
-        //
+        int M = P.size();
+        int a = rng.random_number() % M;
+        int b = rng.random_number() % M;
+        std::swap(perm[a], perm[b]);
+        last_swapped = {a, b};
+        last_score = score;
+        auto pos = compress_y(N, P, perm, X);
+        score = sum_edge_length(pos, E);
     }
+
     void rollback() {
-        //
+        auto [a, b] = last_swapped;
+        std::swap(perm[a], perm[b]);
+        score = last_score;
     }
-    std::pair<UpdateType, ScoreType> get_next() {
-        return {UpdateType{}, score};
-    }
-   
+
     ScoreType get_score() {
         return score;
     }
@@ -137,61 +179,50 @@ struct StateSA {
 int main() {
     std::vector<std::pair<int, int>> E;
     process_map mp;
-    for (auto [s, t] : read_csv("../testcase/case2.csv")) {
+    for (auto [s, t] : read_csv("../testcase/random_small.csv")) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
     }
 
-
-    // 各工程の横軸の座標を決定
     const int N = mp.size();
-    std::vector<int> in(N, 0), X(N);
-    std::vector<std::vector<int>> G(N);
-    for (auto [s, t] : E) {
-        in[t]++;
-        G[s].push_back(t);
-    }
-    std::queue<int> que;
-    for (int i = 0; i < N; i++) {
-        if (in[i] == 0) {
-            X[i] = 0;
-            que.push(i);
-        }
-    }
-    while (!que.empty()) {
-        int s = que.front();
-        que.pop();
-        for (int t : G[s]) {
-            in[t]--;
-            if (in[t] == 0) {
-                X[t] = X[s] + 1;
-                que.push(t);
-            }
-        }
-    }
     
-    // 縦方向の座標を雑に決める
-    std::vector<int> Y(N), xcnt(N, 0);
-    for (int i = 0; i < N; i++) {
-        int x = X[i];
-        Y[i] = xcnt[x]++;
-    }
+    auto X = calc_min_x(N, E);
+    auto P = decompose_long_path(N, E);
 
-    // スコア計算
-    {
-        std::vector<std::pair<int, int>> pos(N);
-        for (int i = 0; i < N; i++) {
-            pos[i] = {X[i], Y[i]};
-        }
+    int K = P.size();
+    if (K <= 8) {
+        std::vector<int> perm(K);
+        std::iota(perm.begin(), perm.end(), 0);
+        double min_score = std::numeric_limits<double>::max();
+        auto min_perm = perm;
+        do {
+            auto pos = compress_y(N, P, perm, X);
+            double score = sum_edge_length(pos, E);
+            if (score < min_score) {
+                min_score = score;
+                min_perm = perm;
+            }
+        } while (std::next_permutation(perm.begin(), perm.end()));
+        
+        auto pos = compress_y(N, P, min_perm, X);
         double score = sum_edge_length(pos, E);
         std::cout << "score is " << score << '\n';
+        std::vector<std::tuple<std::string, int, int>> ans(N);
+        for (int i = 0; i < N; i++) {
+            ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
+        }
+        write_csv("../testcase/random_small_ans_lp.csv", ans);
+    } else {
+        StateSA sa(N, P, X, E);
+        simulated_annealing<timer<0>, temperature_scheduler_exp<0>, StateSA>()(sa, 1000, 0.1, 2000, 1);
+        auto pos = compress_y(N, P, sa.perm, X);
+        double score = sum_edge_length(pos, E);
+        std::cout << "score is " << score << '\n';
+        std::vector<std::tuple<std::string, int, int>> ans(N);
+        for (int i = 0; i < N; i++) {
+            ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
+        }
+        write_csv("../testcase/random_small_ans_lp.csv", ans);
     }
-
-    // 答えを作成
-    std::vector<std::tuple<std::string, int, int>> P(N);
-    for (int i = 0; i < N; i++) {
-        P[i] = {mp.get_process(i), X[i], Y[i]};
-    }
-    write_csv("../testcase/case2_ans.csv", P);
 }
