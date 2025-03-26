@@ -1,11 +1,10 @@
 #include "CheckLib.hpp"
 #include "Lib.hpp"
-#include "solve_penetration.hpp"
-#include <queue>
 
 int main() {
     std::string path_in = "../testcase/case1.csv";
-    std::string path_out = "../testcase/case1_ans.csv";
+    std::string path_out = "../testcase/case1_ans_greedy.csv";
+    assert(CheckLib::is_valid_input(path_in));
 
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
@@ -15,39 +14,17 @@ int main() {
         E.push_back({sid, tid});
     }
 
-    // 各工程の横軸の座標を決定
+    E = remove_multiple_edge(E);
     int N = mp.size();
-    std::vector<int> in(N, 0), X(N);
-    std::vector<std::vector<int>> G(N);
-    for (auto [s, t] : E) {
-        in[t]++;
-        G[s].push_back(t);
-    }
-    std::queue<int> que;
-    for (int i = 0; i < N; i++) {
-        if (in[i] == 0) {
-            X[i] = 0;
-            que.push(i);
-        }
-    }
-    while (!que.empty()) {
-        int s = que.front();
-        que.pop();
-        for (int t : G[s]) {
-            in[t]--;
-            if (in[t] == 0) {
-                X[t] = X[s] + 1;
-                que.push(t);
-            }
-        }
-    }
-    
+    auto G = adjacency_list(N, E);
+    // 各工程の横軸の座標を決定
+    auto X = calc_min_x(G);
+
     // 縦方向の座標を雑に決める
     std::vector<int> Y(N), xcnt(N, 0);
     for (int i = 0; i < N; i++) {
         int x = X[i];
         Y[i] = xcnt[x];
-        // Y[i] = (xcnt[x] % 2 == 1 ? (xcnt[x] + 1) / 2 : -xcnt[x] / 2);
         xcnt[x]++;
     }
 

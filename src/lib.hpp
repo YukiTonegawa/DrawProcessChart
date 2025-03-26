@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <queue>
+#include <cassert>
 
 // 工程名と番号を1対1対応させるmap
 struct ProcessMap {
@@ -24,7 +25,7 @@ struct ProcessMap {
     }
 
     // 工程名sを登録してその番号(登録順の非負整数)を返す. すでに登録されている場合はその番号を返す
-    int register_process(std::string s) {
+    int register_process(const std::string &s) {
         auto itr = _mp.find(s);
         if (itr == _mp.end()) {
             int next_id = _mp.size();
@@ -37,7 +38,7 @@ struct ProcessMap {
     }
 
     // 工程名sが登録されている場合その番号, そうでない場合-1を返す
-    int get_id(std::string s) const {
+    int get_id(const std::string &s) const {
         auto itr = _mp.find(s);
         if (itr == _mp.end()) {
             return -1;
@@ -56,17 +57,36 @@ struct ProcessMap {
     }
 };
 
-
-
-
-std::vector<int> calc_min_x(int N, std::vector<std::pair<int, int>> E) {
-    std::vector<std::vector<int>> G(N);
+// 辺集合 -> 隣接リスト
+std::vector<std::vector<int>> adjacency_list(int N, const std::vector<std::pair<int, int>> &E) {
+    std::vector<std::vector<int>> ans(N);
     for (auto [s, t] : E) {
-        G[s].push_back(t);
+        assert(0 <= s && s < N);
+        assert(0 <= t && t < N);
+        ans[s].push_back(t);
     }
+    return ans;
+}
+
+// 多重辺を省く
+std::vector<std::pair<int, int>> remove_multiple_edge(std::vector<std::pair<int, int>> E) {
+    std::sort(E.begin(), E.end());
+    E.erase(std::unique(E.begin(), E.end()), E.end());
+    return E;
+}
+
+/*
+負のx座標を使わないことにすると、各工程が存在できる最小のx座標が決まる。
+この値を計算する
+O(N)
+*/
+std::vector<int> calc_min_x(const std::vector<std::vector<int>> &G) {
+    int N = G.size();
     std::vector<int> in(N, 0), X(N);
-    for (auto [s, t] : E) {
-        in[t]++;
+    for (int i = 0; i < N; i++) {
+        for (int t : G[i]) {
+            in[t]++;
+        }
     }
     std::queue<int> que;
     for (int i = 0; i < N; i++) {
@@ -89,12 +109,18 @@ std::vector<int> calc_min_x(int N, std::vector<std::pair<int, int>> E) {
     return X;
 }
 
-std::vector<std::vector<int>> decompose_long_path(int N, std::vector<std::pair<int, int>> E) {
+
+
+/*
+DAGなので最長パスが計算できる
+最長パスを取り去ることを繰り返して(全頂点使うまで)いくつかのパスに分解
+O(N^2)
+*/
+std::vector<std::vector<int>> decompose_long_path(const std::vector<std::vector<int>> &G) {
+    int N = G.size();
     std::vector<int> dep(N, -1), next(N, -1), used(N, 0);
-    std::vector<std::vector<int>> G(N), res;
-    for (auto [s, t] : E) {
-        G[s].push_back(t);
-    }
+    std::vector<std::vector<int>> ans;
+
     auto dfs = [&](auto &&dfs, int v) -> int {
         if (used[v]) return -1;
         if (dep[v] != -1) return dep[v];
@@ -108,6 +134,7 @@ std::vector<std::vector<int>> decompose_long_path(int N, std::vector<std::pair<i
         }
         return dep[v];
     };
+    
     while (true) {
         std::pair<int, int> M = {-1, -1};
         for (int i = 0; i < N; i++) {
@@ -116,9 +143,9 @@ std::vector<std::vector<int>> decompose_long_path(int N, std::vector<std::pair<i
         }
         if (M.first == -1) break;
         int v = M.second;
-        res.push_back({});
+        ans.push_back({});
         while (v != -1) {
-            res.back().push_back(v);
+            ans.back().push_back(v);
             used[v] = true;
             v = next[v];
         }
@@ -128,22 +155,117 @@ std::vector<std::vector<int>> decompose_long_path(int N, std::vector<std::pair<i
             }
         }
     }
-    return res;
+    return ans;
 }
 
 // 辺の長さの総和を返す
-double sum_edge_length(std::vector<std::pair<int, int>> P, std::vector<std::pair<int, int>> E) {
-    // 多重辺を省く
-    std::sort(E.begin(), E.end());
-    E.erase(std::unique(E.begin(), E.end()), E.end());
-
+double sum_edge_length(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
     double ans = 0;
     for (auto [s, t] : E) {
-        auto [sx, sy] = P[s];
-        auto [tx, ty] = P[t];
+        auto [sx, sy] = pos[s];
+        auto [tx, ty] = pos[t];
         int dx = tx - sx;
         int dy = ty - sy;
         ans += std::sqrt(dx * dx + dy * dy);
+    }
+    return ans;
+}
+
+// 貫通を解消
+std::vector<std::pair<int, int>> solve_penetration(std::vector<std::pair<int, int>> P, std::vector<std::pair<int, int>> E) {
+    const int N = P.size();
+    std::vector<std::vector<int>> Col(N);
+    for (int i = 0; i < N; i++) {
+        auto [x, y] = P[i];
+        if ((int)Col[x].size() < y + 1) {
+            Col[x].resize(y + 1, -1);
+        }
+        Col[x][y] = i;
+    }
+
+    // a, b, cが右向きの一直線にあるか
+    auto check_straight_line = [&](int a, int b, int c) -> bool {
+        auto [ax, ay] = P[a];
+        auto [bx, by] = P[b];
+        auto [cx, cy] = P[c];
+        if (bx <= ax || cx <= bx) return false;
+        int dx_ab = bx - ax;
+        int dy_ab = by - ay;
+        int dx_ac = cx - ax;
+        int dy_ac = cy - ay;
+        return dy_ab * dx_ac == dy_ac * dx_ab;
+    };
+
+    std::vector<std::vector<bool>> M(N, std::vector<bool>(N, false));
+    for (auto [a, b] : E) M[a][b] = true;
+
+    for (int y = 0;; y++) {
+        bool ok = false;
+        for (int x = 0; x < N; x++) {
+            if (y < (int)Col[x].size()) {
+                ok = true;
+            } else {
+                continue;
+            }
+            int id = Col[x][y];
+            if (id == -1) continue;
+            bool ok2 = true;
+            
+            for (int a = 0; a < N && ok2; a++) {
+                for (int b = a + 1; b < N && ok2; b++) {
+                    int A = a, B = b, C = id;
+                    if (P[A].first > P[B].first) std::swap(A, B);
+                    if (P[B].first > P[C].first) std::swap(B, C);
+                    if (P[A].first > P[B].first) std::swap(A, B);
+                    if (M[A][C] && check_straight_line(A, B, C)) {
+                        ok2 = false;
+                    }
+                }
+            }
+
+            if (!ok2) {
+                Col[x].insert(Col[x].begin() + y, -1);
+                for (int t = y + 1; t < (int)Col[x].size(); t++) {
+                    id = Col[x][t];
+                    if (id == -1) continue;
+                    P[id].second = t;
+                }
+            }
+        }
+        if (!ok) break;
+    }
+    return P;
+}
+
+std::vector<std::pair<int, int>> compress_y(int N, std::vector<std::vector<int>> P, std::vector<int> perm, std::vector<int> X) {
+    int R = P.size();
+    int l = 0, y = 0;
+    std::vector<std::pair<int, int>> ans(N);
+    while (l < R) {
+        std::vector<bool> used(N, false);
+        int r = l;
+        while (r < R) {
+            int lx = X[P[perm[r]][0]];
+            int rx = X[P[perm[r]].back()];
+            bool ok = true;
+            for (int j = lx; j <= rx; j++) {
+                if (used[j]) {
+                    ok = false;
+                    break;
+                }
+                used[j] = true;
+            }
+            if (!ok) break;
+            r++;
+        }
+        for (int i = l; i < r; i++) {
+            for (int v : P[perm[i]]) {
+                ans[v].first = X[v];
+                ans[v].second = y;
+            }
+        }
+        y++;
+        l = r;
     }
     return ans;
 }

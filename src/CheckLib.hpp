@@ -13,6 +13,11 @@
 
 // 指定したパスが正しい入力(工程の前後関係のCSVファイル)か判定する関数群
 namespace CheckLib {
+    // pathファイルが存在するか
+    bool is_exist(const std::string &path) {
+        return std::filesystem::is_regular_file(path);
+    }
+
     // 拡張子がcsvか
     bool is_csv(const std::string &path) {
         // 最後にドットが現れて以降の文字列がcsvか
@@ -24,12 +29,7 @@ namespace CheckLib {
         }
         if (last_dot == -1) return false; // ドットが現れない
         if (last_dot + 4 != len) return false; // 長さが合わない
-        return path.substr(last_dot + 1, 3) != "csv";
-    }
-
-    // pathファイルが存在するか
-    bool is_exist(const std::string &path) {
-        return std::filesystem::is_regular_file(path);
+        return path.substr(last_dot + 1, 3) == "csv";
     }
 
     // pathファイルが0行以上の(辺の始点),(辺の終点)の形式を満たすか
@@ -50,6 +50,18 @@ namespace CheckLib {
         return true;
     }
 
+    // 末尾の改行文字を最大1つ消す
+    // 改行文字について: https://www.tohoho-web.com/ex/newline-code.html
+    void remove_suffix_endl(std::string &s) {
+        if (s.empty() || (s.back() != '\r' && s.back() != '\n')) return;
+        if (s.back() == '\r') {
+            s.pop_back();
+        } else {
+            s.pop_back();
+            if (!s.empty() && s.back() == '\r') s.pop_back();
+        }
+    }
+
     // is_valid_formatを満たすとして
     // pathを読み込んで辺集合を返す
     std::vector<std::pair<std::string, std::string>> read_csv(const std::string &path) {
@@ -60,12 +72,13 @@ namespace CheckLib {
             int len = s.size();
             int pos_comma = -1;
             for (int i = 0; i < len; i++) {
-                if (s[i] == '.') {
+                if (s[i] == ',') {
                     pos_comma = i;
                 }
             }
             std::string a = s.substr(0, pos_comma);
             std::string b = s.substr(pos_comma + 1, len - pos_comma - 1);
+            remove_suffix_endl(b);
             E.push_back({a, b});
         }
         return E;
@@ -109,6 +122,7 @@ namespace CheckLib {
                 }
             }
         }
+        std::cout << N << " " << cnt << '\n';
         return cnt == N;
     }
 
@@ -140,13 +154,6 @@ namespace CheckLib {
             G[A].push_back(B);
         }
         return is_DAG(G);
-    }
-
-    // 多重辺を省く
-    std::vector<std::pair<int, int>> remove_multiple_edge(std::vector<std::pair<int, int>> E) {
-        std::sort(E.begin(), E.end());
-        E.erase(std::unique(E.begin(), E.end()), E.end());
-        return E;
     }
 
     // pathが以下の要件を全て満たすか
