@@ -3,30 +3,48 @@
 #include "SimulatedAnnealing.hpp"
 #include <numeric>
 
+
 /*
-貫通の処理
-y座標の圧縮
-
-
-1. 無視できる貫通
-A -> B -> C -> D
- ------------->
-
-2. 許容できる貫通
-中心部を通らない
-
-3. 許容できない貫通
-中心部を通る = 直線がある格子点を通り、そこに工程が置かれている
-
-LongPath分解の場合横方向の貫通は全て1になる
-
-
-斜め方向の貫通を減らしたい
-1. 何もしない. 辺の長さを最小化 = 斜めの辺の長さを最小化 = 3の貫通が減る
-2. 
-
-
+oooooo
+oo
+    oo
+という3つのパスがある場合
+oooooo
+oo  oo
+とできる
 */
+std::vector<std::pair<int, int>> compress_y(const std::vector<std::vector<int>> &P, const std::vector<int> &perm, const std::vector<int> &X) {
+    int N = X.size(), R = P.size();
+    int l = 0, y = 0;
+    std::vector<std::pair<int, int>> ans(N);
+    while (l < R) {
+        std::vector<bool> used(N, false);
+        int r = l;
+        while (r < R) {
+            int lx = X[P[perm[r]][0]];
+            int rx = X[P[perm[r]].back()];
+            bool ok = true;
+            for (int j = lx; j <= rx; j++) {
+                if (used[j]) {
+                    ok = false;
+                    break;
+                }
+                used[j] = true;
+            }
+            if (!ok) break;
+            r++;
+        }
+        for (int i = l; i < r; i++) {
+            for (int v : P[perm[i]]) {
+                ans[v].first = X[v];
+                ans[v].second = y;
+            }
+        }
+        y++;
+        l = r;
+    }
+    return ans;
+}
 
 struct StateSA {
     using UpdateType = std::tuple<int, int, int>;
@@ -40,9 +58,9 @@ struct StateSA {
     std::vector<int> X;
     std::vector<std::pair<int, int>> E;
 
-    StateSA(int _N, std::vector<std::vector<int>> _P, std::vector<int> _X, std::vector<std::pair<int, int>> _E) : score(std::numeric_limits<double>::max()), perm(_P.size()), N(_N), P(_P), X(_X), E(_E) {
+    StateSA(std::vector<std::vector<int>> _P, std::vector<int> _X, std::vector<std::pair<int, int>> _E) : score(std::numeric_limits<double>::max()), perm(_P.size()), P(_P), X(_X), E(_E) {
         std::iota(perm.begin(), perm.end(), 0);
-        auto pos = compress_y(N, P, perm, X);
+        auto pos = compress_y(P, perm, X);
         score = sum_edge_length(pos, E);
     }
 
@@ -53,7 +71,7 @@ struct StateSA {
         std::swap(perm[a], perm[b]);
         last_swapped = {a, b};
         last_score = score;
-        auto pos = compress_y(N, P, perm, X);
+        auto pos = compress_y(P, perm, X);
         score = sum_edge_length(pos, E);
     }
 
@@ -69,8 +87,8 @@ struct StateSA {
 };
 
 int main() {
-    std::string path_in = "../testcase/case1.csv";
-    std::string path_out = "../testcase/case1_ans_lp.csv";
+    std::string path_in = "../testcase/case2.csv";
+    std::string path_out = "../testcase/case2_ans_lp.csv";
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
@@ -93,26 +111,25 @@ int main() {
         double min_score = std::numeric_limits<double>::max();
         auto min_perm = perm;
         do {
-            auto pos = compress_y(N, P, perm, X);
-            double score = sum_edge_length(pos, E);
+            auto pos = compress_y(P, perm, X);
+            double score = calc_score(pos, E);
             if (score < min_score) {
                 min_score = score;
                 min_perm = perm;
             }
         } while (std::next_permutation(perm.begin(), perm.end()));
         
-        auto pos = compress_y(N, P, min_perm, X);
-        double score = sum_edge_length(pos, E);
+        auto pos = compress_y(P, min_perm, X);
+        double score = calc_score(pos, E);
         std::cout << "score is " << score << '\n';
-        
         for (int i = 0; i < N; i++) {
             ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
         }
     } else {
-        StateSA sa(N, P, X, E);
+        StateSA sa(P, X, E);
         simulated_annealing<timer<0>, temperature_scheduler_exp<0>, StateSA>()(sa, 1000, 0.1, 2000, 1);
-        auto pos = compress_y(N, P, sa.perm, X);
-        double score = sum_edge_length(pos, E);
+        auto pos = compress_y(P, sa.perm, X);
+        double score = calc_score(pos, E);
         std::cout << "score is " << score << '\n';
         for (int i = 0; i < N; i++) {
             ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};

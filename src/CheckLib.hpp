@@ -122,7 +122,6 @@ namespace CheckLib {
                 }
             }
         }
-        std::cout << N << " " << cnt << '\n';
         return cnt == N;
     }
 

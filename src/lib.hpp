@@ -109,8 +109,6 @@ std::vector<int> calc_min_x(const std::vector<std::vector<int>> &G) {
     return X;
 }
 
-
-
 /*
 DAGなので最長パスが計算できる
 最長パスを取り去ることを繰り返して(全頂点使うまで)いくつかのパスに分解
@@ -171,102 +169,54 @@ double sum_edge_length(const std::vector<std::pair<int, int>> &pos, const std::v
     return ans;
 }
 
-// 貫通を解消
-std::vector<std::pair<int, int>> solve_penetration(std::vector<std::pair<int, int>> P, std::vector<std::pair<int, int>> E) {
-    const int N = P.size();
-    std::vector<std::vector<int>> Col(N);
-    for (int i = 0; i < N; i++) {
-        auto [x, y] = P[i];
-        if ((int)Col[x].size() < y + 1) {
-            Col[x].resize(y + 1, -1);
-        }
-        Col[x][y] = i;
+int count_bad_penetration(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
+    /*
+    int ans = 0;
+    for (auto [s, t] : E) {
+        //
     }
-
-    // a, b, cが右向きの一直線にあるか
-    auto check_straight_line = [&](int a, int b, int c) -> bool {
-        auto [ax, ay] = P[a];
-        auto [bx, by] = P[b];
-        auto [cx, cy] = P[c];
-        if (bx <= ax || cx <= bx) return false;
-        int dx_ab = bx - ax;
-        int dy_ab = by - ay;
-        int dx_ac = cx - ax;
-        int dy_ac = cy - ay;
-        return dy_ab * dx_ac == dy_ac * dx_ab;
-    };
-
-    std::vector<std::vector<bool>> M(N, std::vector<bool>(N, false));
-    for (auto [a, b] : E) M[a][b] = true;
-
-    for (int y = 0;; y++) {
-        bool ok = false;
-        for (int x = 0; x < N; x++) {
-            if (y < (int)Col[x].size()) {
-                ok = true;
-            } else {
-                continue;
-            }
-            int id = Col[x][y];
-            if (id == -1) continue;
-            bool ok2 = true;
-            
-            for (int a = 0; a < N && ok2; a++) {
-                for (int b = a + 1; b < N && ok2; b++) {
-                    int A = a, B = b, C = id;
-                    if (P[A].first > P[B].first) std::swap(A, B);
-                    if (P[B].first > P[C].first) std::swap(B, C);
-                    if (P[A].first > P[B].first) std::swap(A, B);
-                    if (M[A][C] && check_straight_line(A, B, C)) {
-                        ok2 = false;
-                    }
-                }
-            }
-
-            if (!ok2) {
-                Col[x].insert(Col[x].begin() + y, -1);
-                for (int t = y + 1; t < (int)Col[x].size(); t++) {
-                    id = Col[x][t];
-                    if (id == -1) continue;
-                    P[id].second = t;
-                }
-            }
-        }
-        if (!ok) break;
-    }
-    return P;
+    return ans;
+    */
+    return 0;
 }
 
-std::vector<std::pair<int, int>> compress_y(int N, std::vector<std::vector<int>> P, std::vector<int> perm, std::vector<int> X) {
-    int R = P.size();
-    int l = 0, y = 0;
-    std::vector<std::pair<int, int>> ans(N);
-    while (l < R) {
-        std::vector<bool> used(N, false);
-        int r = l;
-        while (r < R) {
-            int lx = X[P[perm[r]][0]];
-            int rx = X[P[perm[r]].back()];
-            bool ok = true;
-            for (int j = lx; j <= rx; j++) {
-                if (used[j]) {
-                    ok = false;
-                    break;
-                }
-                used[j] = true;
-            }
-            if (!ok) break;
-            r++;
-        }
-        for (int i = l; i < r; i++) {
-            for (int v : P[perm[i]]) {
-                ans[v].first = X[v];
-                ans[v].second = y;
+int count_all_penetration(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
+    int N = pos.size();
+    int ans = 0;
+    for (auto [s, t] : E) {
+        auto [sx, sy] = pos[s];
+        auto [tx, ty] = pos[t];
+        for (int i = 0; i < N; i++) {
+            auto [ix, iy] = pos[i];
+            if (sx < ix && ix < tx && (iy - ty) * (tx - sx) == (ty - sy) * (ix - sx)) {
+                ans++;
             }
         }
-        y++;
-        l = r;
     }
     return ans;
 }
+
+// 辺の長さの総和 * (1 + 貫通 / 辺の数)
+double calc_score(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
+    double len = sum_edge_length(pos, E);
+    int num_pen = count_all_penetration(pos, E);
+    int num_e = E.size();
+    return len * (1.0 + ((double)num_pen / num_e));
+}
+
+/*
+1. 無視できる貫通
+A -> B -> C -> D
+ ------------->
+
+A->Dがビジュアライザ上でB, Cを貫通することによってA->B && B->C && C->Dと読み間違える可能性がある
+読み間違えの有無に関わらず情報量が変わらない場合無視できる
+
+2. 許容できる貫通
+中心部を通らない
+ビジュアライザ上で角を掠める程度の貫通の場合許容できる
+
+3. 許容できない貫通
+中心部を通る = 直線がある格子点を通り、そこに工程が置かれている
+*/
 #endif

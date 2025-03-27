@@ -2,8 +2,8 @@
 #include "Lib.hpp"
 
 int main() {
-    std::string path_in = "../testcase/case1.csv";
-    std::string path_out = "../testcase/case1_ans_greedy.csv";
+    std::string path_in = "../testcase/case2.csv";
+    std::string path_out = "../testcase/case2_ans_greedy.csv";
     assert(CheckLib::is_valid_input(path_in));
 
     std::vector<std::pair<int, int>> E;
@@ -32,10 +32,9 @@ int main() {
     for (int i = 0; i < N; i++) {
         pos[i] = {X[i], Y[i]};
     }
-    pos = solve_penetration(pos, E);
 
     // スコア計算
-    double score = sum_edge_length(pos, E);
+    double score = calc_score(pos, E);
     std::cout << "score is " << score << '\n';
 
     // 答えを作成
