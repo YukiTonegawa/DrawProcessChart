@@ -196,12 +196,69 @@ int count_all_penetration(const std::vector<std::pair<int, int>> &pos, const std
     return ans;
 }
 
+/*
+// 辺が交差する回数
+int count_edge_cross(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
+    int ans = 0;
+    int M = E.size();
+    for (int i = 0; i < M; i++) {
+        auto [ax, ay] = 
+        for (int j = i + 1; j < M; j++) {
+            //
+        }
+    }
+    return ans;
+}
+*/
+
 // 辺の長さの総和 * (1 + 貫通 / 辺の数)
 double calc_score(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
     double len = sum_edge_length(pos, E);
     int num_pen = count_all_penetration(pos, E);
     int num_e = E.size();
     return len * (1.0 + ((double)num_pen / num_e));
+}
+
+/*
+oooooo
+oo
+    oo
+という3つのパスがある場合
+oooooo
+oo  oo
+とできる
+*/
+std::vector<std::pair<int, int>> compress_y(const std::vector<std::vector<int>> &P, const std::vector<int> &perm, const std::vector<int> &X) {
+    int N = X.size(), R = P.size();
+    int l = 0, y = 0;
+    std::vector<std::pair<int, int>> ans(N);
+    while (l < R) {
+        std::vector<bool> used(N, false);
+        int r = l;
+        while (r < R) {
+            int lx = X[P[perm[r]][0]];
+            int rx = X[P[perm[r]].back()];
+            bool ok = true;
+            for (int j = lx; j <= rx; j++) {
+                if (used[j]) {
+                    ok = false;
+                    break;
+                }
+                used[j] = true;
+            }
+            if (!ok) break;
+            r++;
+        }
+        for (int i = l; i < r; i++) {
+            for (int v : P[perm[i]]) {
+                ans[v].first = X[v];
+                ans[v].second = y;
+            }
+        }
+        y++;
+        l = r;
+    }
+    return ans;
 }
 
 /*

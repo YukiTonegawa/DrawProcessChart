@@ -2,7 +2,6 @@
 #include "Lib.hpp"
 #include "Random.hpp"
 #include "SimulatedAnnealing.hpp"
-#include "solve_penetration.hpp"
 #include <queue>
 #include <chrono>
 #include <cassert>
@@ -10,77 +9,52 @@
 // 山登り法
 // 時間の許す限り縦方向の並びを変更
 int main() {
-    std::string path_in = "../testcase/case1.csv";
-    std::string path_out = "../testcase/case1_ans.csv";
-
+    std::string path_in = "../testcase/random_small.csv";
+    std::string path_out = "../testcase/random_small_ans_cl.csv";
+    assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
-    process_map mp;
-    for (auto [s, t] : CheckLib::ReadCsv(path_in)) {
+    ProcessMap mp;
+    for (auto [s, t] : CheckLib::read_csv(path_in)) {
         int sid = mp.register_process(s);
         int tid = mp.register_process(t);
         E.push_back({sid, tid});
     }
+    E = remove_multiple_edge(E);
+    int N = mp.size();
+    auto G = adjacency_list(N, E);
+    auto X = calc_min_x(G);
 
-    // 各工程の横軸の座標を決定
-    const int N = mp.size();
-    std::vector<int> in(N, 0), X(N);
-    std::vector<std::vector<int>> G(N);
-    for (auto [s, t] : E) {
-        in[t]++;
-        G[s].push_back(t);
-    }
-    std::queue<int> que;
-    for (int i = 0; i < N; i++) {
-        if (in[i] == 0) {
-            X[i] = 0;
-            que.push(i);
-        }
-    }
-    while (!que.empty()) {
-        int s = que.front();
-        que.pop();
-        for (int t : G[s]) {
-            in[t]--;
-            if (in[t] == 0) {
-                X[t] = X[s] + 1;
-                que.push(t);
-            }
-        }
-    }
-    
     // 縦方向の座標を雑に決める
     std::vector<int> Y(N), xcnt(N, 0);
     std::vector<std::vector<int>> Col(N);
     for (int i = 0; i < N; i++) {
         int x = X[i];
         Y[i] = xcnt[x];
-        // Y[i] = (xcnt[x] % 2 == 1 ? (xcnt[x] + 1) / 2 : -xcnt[x] / 2);
         xcnt[x]++;
         Col[x].push_back(i);
     }
 
-    auto calc_score = [&]() -> double {
+    auto _calc_score = [&]() -> double {
         std::vector<std::pair<int, int>> tmp(N);
         for (int i = 0; i < N; i++) {
             tmp[i] = {X[i], Y[i]};
         }
-        tmp = solve_penetration(tmp, E);
-        return sum_edge_length(tmp, E);
+        return calc_score(tmp, E);
     };
 
-    double score = calc_score();
+    double score = _calc_score();
 
     const int Tend = 2000;
     timer<0>::set();
     while (true) {
         if (timer<0>::elapse() >= Tend) break;
-        int x = rng.RandomNumber() % N;
+        int x = rng.random_number() % N;
         int sz = Col[x].size();
         if (sz <= 1) continue;
-        int a = Col[x][rng.RandomNumber() % sz];
-        int b = Col[x][rng.RandomNumber() % sz];
+        int a = Col[x][rng.random_number() % sz];
+        int b = Col[x][rng.random_number() % sz];
         std::swap(Y[a], Y[b]);
-        double new_score = calc_score();
+        double new_score = _calc_score();
         if (new_score < score) {
             score = new_score;
         } else {
@@ -92,14 +66,10 @@ int main() {
     for (int i = 0; i < N; i++) {
         pos[i] = {X[i], Y[i]};
     }
-    pos = solve_penetration(pos, E);
-
     std::cout << "score is " << score << '\n';
-
-    // 答えを作成
     std::vector<std::tuple<std::string, int, int>> P(N);
     for (int i = 0; i < N; i++) {
         P[i] = {mp.get_process(i), pos[i].first, pos[i].second};
     }
-    CheckLib::WriteCsv(path_out, P);
+    CheckLib::write_csv(path_out, P);
 }
