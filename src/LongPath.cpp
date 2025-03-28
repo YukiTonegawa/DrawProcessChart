@@ -9,33 +9,94 @@ struct StateSA {
     ScoreType score;
     std::vector<int> perm;
     int N;
-    std::pair<int, int> last_swapped;
+    std::tuple<int, int, int> last_query;
     double last_score;
     std::vector<std::vector<int>> P;
-    std::vector<int> X;
+    std::vector<int> minX, curX, ord;
     std::vector<std::pair<int, int>> E;
+    std::vector<std::vector<int>> G;
 
-    StateSA(std::vector<std::vector<int>> _P, std::vector<int> _X, std::vector<std::pair<int, int>> _E) : score(std::numeric_limits<double>::max()), perm(_P.size()), P(_P), X(_X), E(_E) {
+    StateSA(std::vector<std::vector<int>> _P, std::vector<int> _X, std::vector<std::pair<int, int>> _E) : score(std::numeric_limits<double>::max()), perm(_P.size()), N(_X.size()), P(_P), minX(_X), curX(_X), E(_E), G(adjacency_list(N, E)) {
         std::iota(perm.begin(), perm.end(), 0);
-        auto pos = compress_y(P, perm, X);
-        score = sum_edge_length(pos, E);
+        auto tmpX = curX;
+        auto pos = compress_y(P, perm, tmpX);
+        score = calc_score(pos, E);
+
+        std::vector<int> in(N, 0), X(N);
+        for (int i = 0; i < N; i++) {
+            for (int t : G[i]) {
+                in[t]++;
+            }
+        }
+        std::queue<int> que;
+        for (int i = 0; i < N; i++) {
+            if (in[i] == 0) {
+                que.push(i);
+            }
+        }
+        while (!que.empty()) {
+            int s = que.front();
+            que.pop();
+            ord.push_back(s);
+            for (int t : G[s]) {
+                in[t]--;
+                if (in[t] == 0) {
+                    que.push(t);
+                }
+            }
+        }
+    }
+
+    std::vector<int> make_tmpX() {
+        auto tmpX = curX;
+        for (int s : ord) {
+            for (int t : G[s]) {
+                tmpX[t] = std::max(tmpX[t], tmpX[s] + 1);
+            }
+        }
+        return tmpX;
     }
 
     void random_update() {
         int M = P.size();
-        int a = rng.random_number() % M;
-        int b = rng.random_number() % M;
-        std::swap(perm[a], perm[b]);
-        last_swapped = {a, b};
+        int type = rng.random_number() % 3;
+        //type = 0;
+        if (type == 0) {
+            int a = rng.random_number() % M;
+            int b = rng.random_number() % M;
+            std::swap(perm[a], perm[b]);
+            last_query = {0, a, b};
+        } else if (type == 1) {
+            int a = rng.random_number() % N;
+            last_query = {1, a, 1};
+            curX[a]++;
+        } else {
+            int a = rng.random_number() % N;
+            if (curX[a] == minX[a]) {
+                last_query = {2, a, 0};
+            } else {
+                last_query = {2, a, 1};
+                curX[a]--;
+            }
+        }
         last_score = score;
-        auto pos = compress_y(P, perm, X);
-        score = sum_edge_length(pos, E);
+        auto tmpX = make_tmpX();
+        auto pos = compress_y(P, perm, tmpX);
+        score = calc_score(pos, E);
     }
 
     void rollback() {
-        auto [a, b] = last_swapped;
-        std::swap(perm[a], perm[b]);
-        score = last_score;
+        auto [type, a, b] = last_query;
+        if (type == 0) {
+            std::swap(perm[a], perm[b]);
+            score = last_score;
+        } else if (type == 1) {
+            curX[a]--;
+            score = last_score;
+        } else {
+            curX[a] += b;
+            score = last_score;
+        }
     }
 
     ScoreType get_score() {
@@ -63,7 +124,7 @@ int main() {
     std::vector<std::tuple<std::string, int, int>> ans(N);
     std::vector<std::pair<int, int>> pos;
 
-    if (K <= 8) {
+    if (false) {
         std::vector<int> perm(K);
         std::iota(perm.begin(), perm.end(), 0);
         double min_score = std::numeric_limits<double>::max();
@@ -80,7 +141,7 @@ int main() {
     } else {
         StateSA sa(P, X, E);
         simulated_annealing<timer<0>, temperature_scheduler_exp<0>, StateSA>()(sa, 1000, 0.1, 2000, 1);
-        pos = compress_y(P, sa.perm, X);
+        pos = compress_y(P, sa.perm, sa.make_tmpX());
     }
     double score = calc_score(pos, E);
     std::cout << "score is " << score << '\n';

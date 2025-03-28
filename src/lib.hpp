@@ -11,6 +11,7 @@
 #include <cmath>
 #include <queue>
 #include <cassert>
+#include <numeric>
 
 // 工程名と番号を1対1対応させるmap
 struct ProcessMap {
@@ -170,14 +171,41 @@ double sum_edge_length(const std::vector<std::pair<int, int>> &pos, const std::v
 }
 
 int count_bad_penetration(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
-    /*
-    int ans = 0;
+    int N = pos.size();
+    std::vector<int> idx(N);
+    std::iota(idx.begin(), idx.end(), 0);
+    std::sort(idx.begin(), idx.end(), [&](int a, int b) { return pos[a].first < pos[b].first; });
+    std::vector<std::vector<bool>> mat(N, std::vector<bool>(N, false));
     for (auto [s, t] : E) {
-        //
+        mat[s][t] = true;
+    }
+    int ans = 0;
+
+    for (auto [s, t] : E) {
+        int dx = pos[t].first - pos[s].first;
+        int dy = pos[t].second - pos[s].second;
+        int g = std::gcd(dx, dy);
+        dx /= g;
+        dy /= g;
+        int x = pos[s].first + dx, y = pos[s].second + dy;
+        int v = s;
+        while (x != pos[t].first) {
+            int next = -1;
+            for (int i = 0; i < N; i++) {
+                if (pos[i].first == x && pos[i].second == y) {
+                    next = i;
+                    break;
+                }
+            }
+            if (next != -1) {
+                if (!mat[v][next]) ans++;
+                v = next;
+            }
+            x += dx;
+            y += dy;
+        }
     }
     return ans;
-    */
-    return 0;
 }
 
 int count_all_penetration(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
@@ -196,27 +224,45 @@ int count_all_penetration(const std::vector<std::pair<int, int>> &pos, const std
     return ans;
 }
 
-/*
 // 辺が交差する回数
 int count_edge_cross(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
     int ans = 0;
     int M = E.size();
     for (int i = 0; i < M; i++) {
-        auto [ax, ay] = 
+        auto [a, b] = E[i];
+        auto [ax, ay] = pos[a];
+        auto [bx, by] = pos[b];
         for (int j = i + 1; j < M; j++) {
-            //
+            auto [c, d] = E[j];
+            auto [cx, cy] = pos[c];
+            auto [dx, dy] = pos[d];
+            assert(ax != bx);
+            assert(cx != dx);
+            double s1 = double(by - ay) / (bx - ax);
+            double s2 = double(dy - cy) / (dx - cx);
+            // y = (by - ay) / (bx - ax) * (x - ax) + ay
+            // y = (dy - cy) / (dx - cx) * (x - cx) + cy
+            // y = s1x - s1ax + ay
+            // y = s2x - s2cx + cy
+            // (s1 - s2)x = s1ax - ay - s2cx + cy
+            if (s1 != s2) {
+                double cross_x = (s1 * ax - ay - s2 * cx + cy) / (s1 - s2);
+                if (ax < cross_x && cross_x < bx && cx < cross_x && cross_x < dx) {
+                    ans++;
+                } 
+            }
         }
     }
     return ans;
 }
-*/
 
 // 辺の長さの総和 * (1 + 貫通 / 辺の数)
 double calc_score(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
     double len = sum_edge_length(pos, E);
-    int num_pen = count_all_penetration(pos, E);
+    int num_pen = count_bad_penetration(pos, E);
     int num_e = E.size();
-    return len * (1.0 + ((double)num_pen / num_e));
+    int num_cross = count_edge_cross(pos, E);
+    return len * (1.0 + ((double)num_pen / num_e)) * (1.0 + (double)num_cross / (num_e * num_e));
 }
 
 /*
@@ -238,6 +284,9 @@ std::vector<std::pair<int, int>> compress_y(const std::vector<std::vector<int>> 
         while (r < R) {
             int lx = X[P[perm[r]][0]];
             int rx = X[P[perm[r]].back()];
+            if (rx >= used.size()) {
+                used.resize(rx + 1, false);
+            }
             bool ok = true;
             for (int j = lx; j <= rx; j++) {
                 if (used[j]) {

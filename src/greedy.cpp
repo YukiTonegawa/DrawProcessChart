@@ -2,8 +2,8 @@
 #include "Lib.hpp"
 
 int main() {
-    std::string path_in = "../testcase/random_small.csv";
-    std::string path_out = "../testcase/random_small_ans_greedy.csv";
+    std::string path_in = "../testcase/random_large.csv";
+    std::string path_out = "../testcase/random_large_ans_greedy.csv";
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
