@@ -170,6 +170,20 @@ double sum_edge_length(const std::vector<std::pair<int, int>> &pos, const std::v
     return ans;
 }
 
+// 斜めの辺の長さの総和
+double sum_edge_length_naname(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
+    double ans = 0;
+    for (auto [s, t] : E) {
+        auto [sx, sy] = pos[s];
+        auto [tx, ty] = pos[t];
+        int dx = tx - sx;
+        int dy = ty - sy;
+        if (dy != 0) ans += std::sqrt(dx * dx + dy * dy);
+    }
+    return ans;
+}
+
+// 無視できない貫通を数える
 int count_bad_penetration(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
     int N = pos.size();
     std::vector<int> idx(N);
@@ -208,6 +222,51 @@ int count_bad_penetration(const std::vector<std::pair<int, int>> &pos, const std
     return ans;
 }
 
+// 無視できない貫通に関与する辺の長さの和
+int sum_edge_length_bad_penetration(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
+    int N = pos.size();
+    std::vector<int> idx(N);
+    std::iota(idx.begin(), idx.end(), 0);
+    std::sort(idx.begin(), idx.end(), [&](int a, int b) { return pos[a].first < pos[b].first; });
+    std::vector<std::vector<bool>> mat(N, std::vector<bool>(N, false));
+    for (auto [s, t] : E) {
+        mat[s][t] = true;
+    }
+    int ans = 0;
+
+    for (auto [s, t] : E) {
+        int dx = pos[t].first - pos[s].first;
+        int dy = pos[t].second - pos[s].second;
+        int g = std::gcd(dx, dy);
+        dx /= g;
+        dy /= g;
+        int x = pos[s].first + dx, y = pos[s].second + dy;
+        int v = s;
+        int dxsum = dx, dysum = dy;
+        while (x != pos[t].first) {
+            int next = -1;
+            for (int i = 0; i < N; i++) {
+                if (pos[i].first == x && pos[i].second == y) {
+                    next = i;
+                    break;
+                }
+            }
+            if (next != -1) {
+                if (!mat[v][next]) {
+                    ans += std::sqrt(dxsum * dxsum + dysum * dysum);
+                }
+                v = next;
+            }
+            x += dx;
+            y += dy;
+            dxsum += dx;
+            dysum += dy;
+        }
+    }
+    return ans;
+}
+
+// 全ての貫通を数える
 int count_all_penetration(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
     int N = pos.size();
     int ans = 0;
@@ -256,13 +315,16 @@ int count_edge_cross(const std::vector<std::pair<int, int>> &pos, const std::vec
     return ans;
 }
 
-// 辺の長さの総和 * (1 + 貫通 / 辺の数)
+// (辺の長さの総和) + a(無視できない貫通に関与する辺の長さの和) + b(斜めの辺の長さの和)
 double calc_score(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
-    double len = sum_edge_length(pos, E);
-    int num_pen = count_bad_penetration(pos, E);
-    int num_e = E.size();
-    int num_cross = count_edge_cross(pos, E);
-    return len * (1.0 + ((double)num_pen / num_e)) * (1.0 + (double)num_cross / (num_e * num_e));
+    // 定数
+    static constexpr double a = 1.0;
+    static constexpr double b = 1.0;
+
+    double lensum = sum_edge_length(pos, E);
+    double p_lensum = sum_edge_length_bad_penetration(pos, E);
+    double naname_lensum = sum_edge_length_naname(pos, E);
+    return lensum + a * p_lensum + b * naname_lensum;
 }
 
 /*
@@ -309,20 +371,4 @@ std::vector<std::pair<int, int>> compress_y(const std::vector<std::vector<int>> 
     }
     return ans;
 }
-
-/*
-1. 無視できる貫通
-A -> B -> C -> D
- ------------->
-
-A->Dがビジュアライザ上でB, Cを貫通することによってA->B && B->C && C->Dと読み間違える可能性がある
-読み間違えの有無に関わらず情報量が変わらない場合無視できる
-
-2. 許容できる貫通
-中心部を通らない
-ビジュアライザ上で角を掠める程度の貫通の場合許容できる
-
-3. 許容できない貫通
-中心部を通る = 直線がある格子点を通り、そこに工程が置かれている
-*/
 #endif
