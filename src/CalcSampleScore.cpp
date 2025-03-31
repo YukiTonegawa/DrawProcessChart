@@ -16,8 +16,8 @@ std::vector<std::string> split(const std::string &s, char delim) {
 
 // サンプルのスコア計算用
 int main() {
-    std::string path_in = "../testcase/case2.csv";
-    std::string path_out = "../testcase/case2_ans.csv";
+    std::string path_in = "../testcase/case1.csv";
+    std::string path_out = "../testcase/case1_ans.csv";
 
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
