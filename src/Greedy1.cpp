@@ -2,8 +2,8 @@
 #include "Lib.hpp"
 
 int main() {
-    std::string path_in = "../testcase/case1.csv";
-    std::string path_out = "../testcase/case1_gr.csv";
+    std::string path_in = "../testcase/case2.csv";
+    std::string path_out = "../testcase/case2_gr.csv";
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
@@ -19,7 +19,7 @@ int main() {
     // 各工程の横軸の座標を決定
     auto X = calc_min_x(G);
 
-    // 縦方向の座標を雑に決める
+    // 縦方向の座標を上から決める
     std::vector<int> Y(N), xcnt(N, 0);
     for (int i = 0; i < N; i++) {
         int x = X[i];

@@ -315,16 +315,13 @@ int count_edge_cross(const std::vector<std::pair<int, int>> &pos, const std::vec
     return ans;
 }
 
-// (辺の長さの総和) + a(無視できない貫通に関与する辺の長さの和) + b(斜めの辺の長さの和)
+// (辺の長さの総和) + a(無視できない貫通に関与する辺の長さの和)
 double calc_score(const std::vector<std::pair<int, int>> &pos, const std::vector<std::pair<int, int>> &E) {
     // 定数
     static constexpr double a = 1.0;
-    static constexpr double b = 1.0;
-
     double lensum = sum_edge_length(pos, E);
     double p_lensum = sum_edge_length_bad_penetration(pos, E);
-    double naname_lensum = sum_edge_length_naname(pos, E);
-    return lensum + a * p_lensum + b * naname_lensum;
+    return lensum + a * p_lensum;
 }
 
 /*

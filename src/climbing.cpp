@@ -9,8 +9,8 @@
 // 山登り法
 // 時間の許す限り縦方向の並びを変更
 int main() {
-    std::string path_in = "../testcase/case1.csv";
-    std::string path_out = "../testcase/case1_cl.csv";
+    std::string path_in = "../testcase/case2.csv";
+    std::string path_out = "../testcase/case2_cl.csv";
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;

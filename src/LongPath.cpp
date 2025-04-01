@@ -105,8 +105,8 @@ struct StateSA {
 };
 
 int main() {
-    std::string path_in = "../testcase/case1.csv";
-    std::string path_out = "../testcase/case1_lp.csv";
+    std::string path_in = "../testcase/random_small.csv";
+    std::string path_out = "../testcase/random_small_lp.csv";
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
@@ -120,29 +120,13 @@ int main() {
     auto G = adjacency_list(N, E);
     auto X = calc_min_x(G);
     auto P = decompose_long_path(G);
-    int K = P.size();
     std::vector<std::tuple<std::string, int, int>> ans(N);
     std::vector<std::pair<int, int>> pos;
 
-    if (false) {
-        std::vector<int> perm(K);
-        std::iota(perm.begin(), perm.end(), 0);
-        double min_score = std::numeric_limits<double>::max();
-        auto min_perm = perm;
-        do {
-            pos = compress_y(P, perm, X);
-            double score = calc_score(pos, E);
-            if (score < min_score) {
-                min_score = score;
-                min_perm = perm;
-            }
-        } while (std::next_permutation(perm.begin(), perm.end()));
-        pos = compress_y(P, min_perm, X);
-    } else {
-        StateSA sa(P, X, E);
-        simulated_annealing<timer<0>, temperature_scheduler_exp<0>, StateSA>()(sa, 1000, 0.1, 2000, 1);
-        pos = compress_y(P, sa.perm, sa.make_tmpX());
-    }
+    StateSA sa(P, X, E);
+    simulated_annealing<timer<0>, temperature_scheduler_exp<0>, StateSA>()(sa, 1000, 0.1, 2000, 1);
+    pos = compress_y(P, sa.perm, sa.make_tmpX());
+    
     double score = calc_score(pos, E);
     std::cout << "score is " << score << '\n';
     for (int i = 0; i < N; i++) {
