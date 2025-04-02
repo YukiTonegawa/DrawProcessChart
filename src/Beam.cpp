@@ -59,8 +59,8 @@ struct MyState {
 };
 
 int main() {
-    std::string path_in = "../testcase/random_med.csv";
-    std::string path_out = "../testcase/random_med_be.csv";
+    std::string path_in = "../testcase/case1.csv";
+    std::string path_out = "../testcase/case1_be.csv";
 
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;

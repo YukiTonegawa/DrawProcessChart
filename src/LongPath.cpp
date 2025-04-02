@@ -105,8 +105,8 @@ struct StateSA {
 };
 
 int main() {
-    std::string path_in = "../testcase/random_med.csv";
-    std::string path_out = "../testcase/random_med_lp.csv";
+    std::string path_in = "../testcase/case1.csv";
+    std::string path_out = "../testcase/case1_lp.csv";
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
