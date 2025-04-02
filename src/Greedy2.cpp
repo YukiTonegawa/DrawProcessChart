@@ -57,6 +57,10 @@ int main() {
     }
     double score = calc_score(pos, E);
     std::cout << "score is " << score << '\n';
+    std::cout << "lensum is " << sum_edge_length(pos, E) << '\n';
+    std::cout << "cross is " << count_edge_cross(pos, E) << '\n';
+    std::cout << "penetration is " << count_bad_penetration(pos, E) << '\n';
+
     for (int i = 0; i < N; i++) {
         ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
     }

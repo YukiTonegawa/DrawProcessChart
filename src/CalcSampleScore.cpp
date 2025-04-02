@@ -16,8 +16,8 @@ std::vector<std::string> split(const std::string &s, char delim) {
 
 // サンプルのスコア計算用
 int main() {
-    std::string path_in = "../testcase/case2.csv";
-    std::string path_out = "../testcase/case2_ans.csv";
+    std::string path_in = "../testcase/case1.csv";
+    std::string path_out = "../testcase/case1_ans.csv";
 
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
@@ -42,4 +42,8 @@ int main() {
     }
     double score = calc_score(pos, E);
     std::cout << "score is " << score << '\n';
+    std::cout << "lensum is " << sum_edge_length(pos, E) << '\n';
+    std::cout << "cross is " << count_edge_cross(pos, E) << '\n';
+    std::cout << "penetration is " << count_bad_penetration(pos, E) << '\n';
+
 }

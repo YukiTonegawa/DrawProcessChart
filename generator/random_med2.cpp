@@ -1,9 +1,9 @@
-#include "../src/random.hpp"
+#include "../src/Random.hpp"
 #include <iostream>
 
 int main() {
     const int N = 30; // 工程数
-    const int M = 45; // 辺数
+    const int M = 30; // 辺数
     auto P = rng.random_permutation(N);
     for (int i = 0; i < M; i++) {
         int a = rng.random_number() % N;

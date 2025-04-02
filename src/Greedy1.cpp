@@ -2,8 +2,8 @@
 #include "Lib.hpp"
 
 int main() {
-    std::string path_in = "../testcase/case2.csv";
-    std::string path_out = "../testcase/case2_gr.csv";
+    std::string path_in = "../testcase/random_med.csv";
+    std::string path_out = "../testcase/random_med_gr.csv";
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
@@ -35,6 +35,10 @@ int main() {
     // スコア計算
     double score = calc_score(pos, E);
     std::cout << "score is " << score << '\n';
+    std::cout << "lensum is " << sum_edge_length(pos, E) << '\n';
+    std::cout << "cross is " << count_edge_cross(pos, E) << '\n';
+    std::cout << "penetration is " << count_bad_penetration(pos, E) << '\n';
+
 
     // 答えを作成
     std::vector<std::tuple<std::string, int, int>> P(N);

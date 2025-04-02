@@ -105,8 +105,8 @@ struct StateSA {
 };
 
 int main() {
-    std::string path_in = "../testcase/random_small.csv";
-    std::string path_out = "../testcase/random_small_lp.csv";
+    std::string path_in = "../testcase/random_med.csv";
+    std::string path_out = "../testcase/random_med_lp.csv";
     assert(CheckLib::is_valid_input(path_in));
     std::vector<std::pair<int, int>> E;
     ProcessMap mp;
@@ -120,6 +120,7 @@ int main() {
     auto G = adjacency_list(N, E);
     auto X = calc_min_x(G);
     auto P = decompose_long_path(G);
+
     std::vector<std::tuple<std::string, int, int>> ans(N);
     std::vector<std::pair<int, int>> pos;
 
@@ -129,6 +130,9 @@ int main() {
     
     double score = calc_score(pos, E);
     std::cout << "score is " << score << '\n';
+    std::cout << "lensum is " << sum_edge_length(pos, E) << '\n';
+    std::cout << "cross is " << count_edge_cross(pos, E) << '\n';
+    std::cout << "penetration is " << count_bad_penetration(pos, E) << '\n';
     for (int i = 0; i < N; i++) {
         ans[i] = {mp.get_process(i), pos[i].first, pos[i].second};
     }
