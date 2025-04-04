@@ -126,7 +126,12 @@ int main() {
 
     StateSA sa(P, X, E);
     simulated_annealing<timer<0>, temperature_scheduler_exp<0>, StateSA>()(sa, 1000, 0.1, 2000, 1);
-    pos = compress_y(P, sa.perm, sa.make_tmpX());
+    //pos = compress_y(P, sa.perm, sa.make_tmpX());
+    
+    pos.resize(N);
+    for (int i = 0; i < N; i++) {
+        
+    }
     
     double score = calc_score(pos, E);
     std::cout << "score is " << score << '\n';
